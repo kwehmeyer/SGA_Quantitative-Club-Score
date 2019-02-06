@@ -1,11 +1,4 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+
 
 library(shiny)
 library(tidyverse)
@@ -26,6 +19,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             h1("Preliminary Information"),
+            textInput("name","Club Name"),
             selectInput("cat", "Club Type:",c("Academic", "Gaming","Outdoor","Recreation", "Religious","Professional Organization")),
             sliderInput("mm", "Monthly Meetings To Date",1, min = 0, max = 20),
             hr(),
@@ -40,7 +34,8 @@ ui <- fluidPage(
             numericInput("gm_attendance","Average Attendace",0, min = 0, max = 1000),
             numericInput("eboard_meetings","Number of E-Board Meetings",0, min = 0, max = 1000),
             numericInput("events","Events",0, min = 0, max = 1000),
-            numericInput("event_attendance","Event Attendance",0, min = 0, max = 1000)
+            numericInput("event_attendance","Event Attendance",0, min = 0, max = 1000),
+            actionButton("update", "Submit Score")
 
          
             
@@ -54,7 +49,9 @@ ui <- fluidPage(
             hr(),
             h1(textOutput("total_result")),
             h2("Total Score"),
-            hr()
+            hr(),
+            tableOutput("table1"),
+            downloadButton("download", "Download CSV")
             
         )
     )
@@ -66,6 +63,51 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+    
+    output$download <- downloadHandler(
+        filename = function() {
+            paste(Sys.Date(),"_Club_Scores", ".csv", sep = "")
+        },
+        content = function(file) {
+            write.csv(ftable(), file, row.names = FALSE)
+        }
+    )
+    ftable <- reactive(values$table)
+    values <- reactiveValues()
+    values$table <- data.frame(Club_Name = NA, Category = NA,
+                               Budget_Percentage_Used = NA,
+                               Missing_Late_Paperwork = NA,
+                               Monthly_Meetings_Missed = NA,
+                               Missing_Broken_Assets = NA,
+                               General_Meetings = NA,
+                               Avg_Attendance = NA,
+                               EBoard_Meetings = NA,
+                               Events = NA,
+                               Event_Attendance = NA,
+                               Club_Performance = NA,
+                               Meeting_Score = NA,
+                               Total = NA)
+    newEntry <- observe({
+        if(input$update > 0){
+        perf1 <- ((input$budget / 100) - (input$mp * 0.15) - (input$missed_meetings/input$mm) - (input$bad_assets * 0.5))
+        social1 <- ((input$gen_meetings * (input$gm_attendance / 100)) + 
+                       (input$events * (input$event_attendance / 50)) + 
+                       (input$eboard_meetings * 0.1))
+        total <- ((perf1+social1)/2) + club()
+        isolate(values$table[nrow(values$table)+1, ] <- c(input$name, input$cat, input$budget,
+                                                          input$mp,
+                                                          input$missed_meetings,
+                                                          input$bad_assets,
+                                                          input$gen_meetings,
+                                                          input$gm_attendance,
+                                                          input$eboard_meetings,
+                                                          input$events,
+                                                          input$event_attendance,
+                                                          perf1,
+                                                          social1,
+                                                          total))}
+    })
+    output$table1 <- renderTable({values$table[c("Club_Name","Club_Performance","Meeting_Score","Total")]})
     
     club <- reactiveVal(0)
     observeEvent(input$cat,{
@@ -85,6 +127,7 @@ server <- function(input, output) {
             club(3)
         }
     })
+    
     
     output$perf_result <- renderText({
         perf <- 0
