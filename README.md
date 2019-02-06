@@ -3,6 +3,8 @@ Creator: Kahlil Wehmeyer
 
 ***
 # Weights
+*Note* Use a desktop markdown renderer or something like https://stackedit.io to view equations properly
+
 Please read this first so you can understand how score are calculated. You will better understand how to adjust weights and how your adjustments will affect the scoring.
 
 ## Club Performance Score
