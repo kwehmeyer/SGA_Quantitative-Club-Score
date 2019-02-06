@@ -1,4 +1,11 @@
-
+#
+# This is a Shiny web application. You can run the application by clicking
+# the 'Run App' button above.
+#
+# Find out more about building applications with Shiny here:
+#
+#    http://shiny.rstudio.com/
+#
 
 library(shiny)
 library(tidyverse)
@@ -72,7 +79,9 @@ ui <- fluidPage(
                         numericInput("event_weight","Events Weight",0.5, min = 0, max = 15),
                         numericInput("eventat_weight","Event Attendance Weight",50, min = 0, max = 500),
                         hr(),
-                        h4("Please consider reading the README.md file found on github")
+                        h4("Please consider reading the README.md file found on Github"),
+                        h5("https://github.com/Khanzi/SGA_Quantitative-Club-Score")
+                        
                         
                         
                         )
