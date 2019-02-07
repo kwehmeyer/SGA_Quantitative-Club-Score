@@ -1,15 +1,19 @@
 # SGA_Quantitative-Club-Score
 
+**Try it here:** https://kahlilwehmeyer.shinyapps.io/SGA_Quantitative-Club-Score/
 
-https://kahlilwehmeyer.shinyapps.io/SGA_Quantitative-Club-Score/
+This project was created for the Audit and Budget Committee of Florida Polytechnic Student Government. The goal was to provide some standardized way to measure the performance of clubs.
 
-Creator: Kahlil Wehmeyer
+
+
 
 ***
+Creator: Kahlil Wehmeyer
+***
 # Weights
-*Note* Use a desktop markdown renderer or something like https://stackedit.io to view equations properly
+*Note*: Use a desktop markdown renderer or something like https://stackedit.io to view equations properly
 
-Please read this first so you can understand how score are calculated. You will better understand how to adjust weights and how your adjustments will affect the scoring.
+Please read this first so you can understand how scores are calculated. You will better understand how to adjust weights and how your adjustments will affect the scoring.
 
 ## Club Performance Score
 This is a punitive score. Meaning that a club can have a maximum score of 0 for this category. 
