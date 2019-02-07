@@ -4,4 +4,4 @@
 
 This project was created for the Audit and Budget Committee of Florida Polytechnic Student Government. The goal was to provide some standardized way to measure the performance of clubs.
 
-Please view the Wiki for more information.
+Please view the [Wiki](https://github.com/Khanzi/SGA_Quantitative-Club-Score/wiki) for more information.
