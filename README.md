@@ -1,4 +1,8 @@
 # SGA_Quantitative-Club-Score
+
+
+https://kahlilwehmeyer.shinyapps.io/SGA_Quantitative-Club-Score/
+
 Creator: Kahlil Wehmeyer
 
 ***
