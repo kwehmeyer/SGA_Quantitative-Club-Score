@@ -87,4 +87,4 @@ $$ General\, Meetings + Events + E-Board\, Meetings$$
 
 # Final Score 
 
-$$ \frac{Social\,Score + Performance\, Score}{2} + Category\, Bonus
+$$ \frac{Social\,Score + Performance\, Score}{2} + Category\, Bonus $$
