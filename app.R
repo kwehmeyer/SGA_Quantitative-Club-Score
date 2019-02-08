@@ -9,7 +9,6 @@
 
 library(shiny)
 library(tidyverse)
-setwd("~/SGA_Quantitative-Club-Score")
 # UI ----------------------------------------------------------------------
 
 
@@ -113,19 +112,19 @@ server <- function(input, output) {
     )
     ftable <- reactive(values$table)
     values <- reactiveValues()
-    values$table <- data.frame(Club_Name = NA, Category = NA,
-                               Budget_Percentage_Used = NA,
-                               Missing_Late_Paperwork = NA,
-                               Monthly_Meetings_Missed = NA,
-                               Missing_Broken_Assets = NA,
-                               General_Meetings = NA,
-                               Avg_Attendance = NA,
-                               EBoard_Meetings = NA,
-                               Events = NA,
-                               Event_Attendance = NA,
-                               Club_Performance = NA,
-                               Meeting_Score = NA,
-                               Total = NA)
+    values$table <- data.frame(Club_Name = character(), Category = character(),
+                               Budget_Percentage_Used = double(),
+                               Missing_Late_Paperwork = double(),
+                               Monthly_Meetings_Missed = double(),
+                               Missing_Broken_Assets = double(),
+                               General_Meetings = double(),
+                               Avg_Attendance = double(),
+                               EBoard_Meetings = double(),
+                               Events = double(),
+                               Event_Attendance = double(),
+                               Club_Performance = double(),
+                               Meeting_Score = double(),
+                               Total = double())
     newEntry <- observe({
         if(input$update > 0){
         perf1 <- (((1-(input$budget / (input$budget_threshold)))*(-input$budget_weight)) - (input$mp * (input$mlp_weight)) - (input$missed_meetings/input$mm) - (input$bad_assets * (input$mba_weight)))
