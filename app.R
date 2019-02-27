@@ -1,14 +1,10 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
+
 #
 
 library(shiny)
 library(tidyverse)
+library(plotly)
+
 # UI ----------------------------------------------------------------------
 
 
@@ -38,7 +34,7 @@ ui <- fluidPage(
                        numericInput("eboard_meetings","Number of E-Board Meetings",0, min = 0, max = 1000),
                        numericInput("events","Events",0, min = 0, max = 1000),
                        numericInput("event_attendance","Event Attendance",0, min = 0, max = 1000),
-                       actionButton("update", "Submit Score")
+                       actionButton("submit", "Submit Score")
                        
                        
                        
@@ -55,6 +51,7 @@ ui <- fluidPage(
                        hr(),
                        tableOutput("table1"),
                        downloadButton("download", "Download CSV")
+                       
                        
                    )
                )),
@@ -83,8 +80,29 @@ ui <- fluidPage(
                         
                         
                         
-                        )
-               )
+                        ),
+               tabPanel("Analytics",
+                        h1("Analysis"),
+                        plotlyOutput("score_distribution"),
+                        hr(),
+                        plotlyOutput("score_density"),
+                        hr(),
+                        h2("Top Clubs"),
+                        tableOutput("top_clubs"),
+                        h2("Worst Clubs"),
+                        tableOutput("worst_clubs")),
+    navbarMenu("Uploads",
+               tabPanel("Upload a file",
+                        fileInput("file1", "Choose CSV File",
+                                  multiple = TRUE,
+                                  accept = c("text/csv",
+                                             "text/comma-separated-values,text/plain",
+                                             ".csv")),
+                        tableOutput("uploaded"),
+                        downloadButton("download_calculated","Calculate and Download")
+               ),
+               tabPanel("About",
+                        column(12, includeMarkdown("downloader.md")))))
 )
 
 
@@ -93,13 +111,93 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+
+
+# Analytics Tab -----------------------------------------------------------
+
+output$score_distribution <- renderPlotly({
+     ggplotly(ggplot(values$table) + geom_boxplot(aes(x = Category, y = Total )) + theme_minimal() + labs(title ="Score Distribution for Categories", xlab = "Category", ylab="Score"))
+})
+
+output$score_density <- renderPlotly({
+    ggplotly(ggplot(values$table) + geom_density(aes(x = Total, fill = Category, alpha=0.1))  + theme_minimal() + labs(title ="Score Distribution ", xlab = "Score", ylab="Density"))
+})
+
+output$top_clubs <- renderTable(values$table %>% arrange(desc(Total)) %>% select(Club_Name, Total) %>% head(5))
+output$worst_clubs <- renderTable(values$table %>% arrange(desc(Total)) %>% select(Club_Name, Total) %>% tail(5))
+output$medianscore <- renderPrint({values$table %>%  summary()})
+
+
     
     
 
+# File Upload -------------------------------------------------------------
+club_perf_calc <- function(data){
+    return(
+        (((1-((data$Budget_Percentage_Used/100) / (input$budget_threshold)))*(-input$budget_weight)) - (data$Missing_Late_Paperwork * (input$mlp_weight)) - (data$Monthly_Meetings_Missed/data$Monthly_Meetings) - (data$Missing_Broken_Assets * (input$mba_weight)))
+    )
+}
+meeting_perf_Calc <- function(data){
+    return(
+        (((data$General_Meetings * (data$Avg_Attendance / input$gmat_weight))*input$gm_weight) + 
+             ((data$Events * (data$Event_Attendance / input$eventat_weight))*input$event_weight) + 
+             (data$Eboard_Meetings * input$eb_weight))
+    )
+}
+total_calc <- function(data){
+    return(
+        (((data$Club_Performance + data$Meeting_Score)/2) + data$Cat_Bonus)
+    )
+}
+
+category_bonus <- function(data){
+    if(data == "Academic"){
+        return(input$academic_bonus)
+    } else if(data == "Gaming"){
+        return(input$gaming_bonus)
+    } else if(data == "Religious"){
+        return(input$religious_bonus)
+    } else if(data == "Outdoor"){
+        return(input$outdoor_bonus)
+    } else if(data == "Recreation"){
+        return(input$recreation_bonus)
+    } else if(data == "Professional Organization"){
+        return(input$po_bonus)
+    }
+}
+
+
+calculate <- function(data){
+    data$Cat_Bonus <- as.integer(lapply(data$Category, category_bonus))
+    data$Club_Performance <-club_perf_calc(data)
+    data$Meeting_Score <- meeting_perf_Calc(data)
+    data$Total <- total_calc(data)
+    return(data)
+    
+}
+
+output$download_calculated <- downloadHandler(
+    filename = function() {
+        paste(Sys.Date(),"_Club_Scores", ".csv", sep = "")
+    },
+    content = function(file) {
+        write.csv(calculate(up_file()), file, row.names = FALSE)
+    }
+)
+
+
+up_file <- reactive({
+    req(input$file1)
+    read.csv(input$file1$datapath)
+})
+
+output$uploaded <- renderTable({
+    up_file()
+})
         
 
 # Score-Card-Server -------------------------------------------------------
-
+    
     
     
     output$download <- downloadHandler(
@@ -112,7 +210,7 @@ server <- function(input, output) {
     )
     ftable <- reactive(values$table)
     values <- reactiveValues()
-    values$table <- data.frame(Club_Name = character(), Category = character(),
+    values$table <- data.frame(Club_Name = character(), Category = factor(levels=c("Academic", "Gaming","Outdoor","Recreation", "Religious","Professional Organization")),
                                Budget_Percentage_Used = double(),
                                Missing_Late_Paperwork = double(),
                                Monthly_Meetings_Missed = double(),
@@ -124,28 +222,27 @@ server <- function(input, output) {
                                Event_Attendance = double(),
                                Club_Performance = double(),
                                Meeting_Score = double(),
-                               Total = double())
-    newEntry <- observe({
-        if(input$update > 0){
-        perf1 <- (((1-(input$budget / (input$budget_threshold)))*(-input$budget_weight)) - (input$mp * (input$mlp_weight)) - (input$missed_meetings/input$mm) - (input$bad_assets * (input$mba_weight)))
-        social1 <- (((input$gen_meetings * (input$gm_attendance / input$gmat_weight))*input$gm_weight) + 
-                       ((input$events * (input$event_attendance / input$eventat_weight))*input$event_weight) + 
-                       (input$eboard_meetings * input$eb_weight))
-        total <- ((perf1+social1)/2) + club()
-        isolate(values$table[nrow(values$table)+1, ] <- c(input$name, input$cat, input$budget,
-                                                          input$mp,
-                                                          input$missed_meetings,
-                                                          input$bad_assets,
-                                                          input$gen_meetings,
-                                                          input$gm_attendance,
-                                                          input$eboard_meetings,
-                                                          input$events,
-                                                          input$event_attendance,
-                                                          perf1,
-                                                          social1,
-                                                          total))}
-    })
-    output$table1 <- renderTable({values$table[c("Club_Name","Club_Performance","Meeting_Score","Total")]})
+                               Total = double(), stringsAsFactors = FALSE)
+    newEntry <- observeEvent(input$submit,
+                              {
+                                  perf1 <- (((1-(input$budget / (input$budget_threshold)))*(-input$budget_weight)) - (input$mp * (input$mlp_weight)) - (input$missed_meetings/input$mm) - (input$bad_assets * (input$mba_weight)))
+                                  social1 <- (((input$gen_meetings * (input$gm_attendance / input$gmat_weight))*input$gm_weight) + 
+                                                  ((input$events * (input$event_attendance / input$eventat_weight))*input$event_weight) + 
+                                                  (input$eboard_meetings * input$eb_weight))
+                                  total <- ((perf1+social1)/2) + club()
+                                  isolate(values$table[nrow(values$table)+1, ] <- c(input$name, input$cat, input$budget,
+                                                                                    input$mp,
+                                                                                    input$missed_meetings,
+                                                                                    input$bad_assets,
+                                                                                    input$gen_meetings,
+                                                                                    input$gm_attendance,
+                                                                                    input$eboard_meetings,
+                                                                                    input$events,
+                                                                                    input$event_attendance,
+                                                                                    perf1,
+                                                                                    social1,
+                                                                                    total))})
+    output$table1 <- renderTable({values$table[c("Club_Name","Category","Club_Performance","Meeting_Score","Total")]})
     
     club <- reactiveVal(0)
     observeEvent(input$cat,{
